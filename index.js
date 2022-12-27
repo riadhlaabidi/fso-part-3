@@ -1,13 +1,24 @@
-const { request, response } = require("express");
+const morgan = require("morgan");
 const express = require("express");
+const cors = require("cors");
 require("dotenv").config();
 
+const PORT = process.env.PORT || 3001;
 const app = express();
+
 app.use(express.json());
+app.use(cors());
 
-const PORT = process.env.PORT;
+morgan.token(
+  "data",
+  (req, res) => req.method === "POST" && JSON.stringify(req.body)
+);
 
-let persons = [
+app.use(
+  morgan(":method :url :status :res[content-length] - :response-time ms :data")
+);
+
+let contacts = [
   {
     id: 1,
     name: "Arto Hellas",
@@ -36,27 +47,27 @@ app.get("/info", (request, response) => {
   );
 });
 
-app.get("/api/persons", (request, response) => {
-  response.json(persons);
+app.get("/api/contacts", (request, response) => {
+  response.json(contacts);
 });
 
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/contacts/:id", (request, response) => {
   const id = Number(request.params.id);
-  const person = persons.find((person) => person.id === id);
-  if (person) {
-    response.json(person);
+  const contact = contacts.find((person) => person.id === id);
+  if (contact) {
+    response.json(contact);
   } else {
     response.status(404).end();
   }
 });
 
-app.delete("/api/persons/:id", (request, response) => {
+app.delete("/api/contacts/:id", (request, response) => {
   const id = Number(request.params.id);
-  persons = persons.filter((person) => person.id !== id);
+  contacts = contacts.filter((person) => person.id !== id);
   response.status(204).end();
 });
 
-app.post("/api/persons", (request, response) => {
+app.post("/api/contacts", (request, response) => {
   const id = Math.floor(Math.random() * 100000);
   const { name, number } = request.body;
   if (!name || !number) {
@@ -64,17 +75,15 @@ app.post("/api/persons", (request, response) => {
       error: "Invalid input",
     });
   }
-  const exist = persons.find((p) => p.name === name);
-  if (exist) {
+  const exists = contacts.find((p) => p.name === name);
+  if (exists) {
     return response.status(400).json({
       error: "Name already exists",
     });
   }
-  const person = { name, number, id };
-  persons.push(person);
-  response.json(person);
+  const contact = { name, number, id };
+  contacts.push(contact);
+  response.json(contact);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
